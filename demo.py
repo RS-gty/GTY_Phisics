@@ -1,4 +1,9 @@
+import random
+
 import numpy as np
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+from mpl_toolkits import mplot3d
 
 # globals
 
@@ -15,21 +20,17 @@ def orthogonal_decomposition(vector, b1):
 
 
 class Field(object):
-    def __init__(self):
+    def __init__(self, field_type, strength, facing: np.ndarray):
         self.con = []
         self.con_type = 0  # 0->and;1->or
-        self.facing = np.array([0, 0, 0])
-        self.strength = 0
-        self.type = 0  # 0->Magnetic;1->Electric;2->Gravity_like
-
-    def initial(self, field_type, strength, facing: np.ndarray):
-        self.type = field_type
-        self.strength = strength
         self.facing = facing
+        self.strength = strength
+        self.type = field_type  # 0->Magnetic;1->Electric;2->Gravity_like
 
-    def check(self, x, y):
-        g['x'] = x
-        g['y'] = y
+    def check(self, position: np.ndarray):
+        g['x'] = position[0]
+        g['y'] = position[1]
+        g['z'] = position[2]
         if self.con_type == 0:
             for p in self.con:
                 if eval(p, g):
@@ -71,9 +72,14 @@ class ChargedParticle(object):
 
         for f in s_field:
             if f.type == 0:
-                pass
-            else:
-                vec = (f.facing * (1 / np.linalg.norm(f.facing)) * f.electric_intensity * self.charge)[0: 2]
+                vec = (self.speed_amount * f.strength * self.charge) * np.cross(self.speed, f.facing) / (
+                        self.speed_amount * np.linalg.norm(f.facing))
+            elif f.type == 1:
+                vec = (f.facing * (1 / np.linalg.norm(f.facing)) * f.strength * self.charge)
+            elif f.type == 2:
+                f_facing = np.subtract(f.facing, self.position)
+                vec = self.mass * f.strength * f_facing / np.linalg.norm(f_facing) ** 3
+
             temp.append(vec)
         for ts in temp:
             s_force = np.add(s_force, ts)
@@ -83,9 +89,9 @@ class ChargedParticle(object):
     def update(self, dt, *field: Field):
         n = 0
         n += 1
-        s_pos = self.position
         activate_field = []
         s_field = []
+
         if type(field[0]) == list:
             s_field = field[0]
         else:
@@ -97,7 +103,7 @@ class ChargedParticle(object):
             pass
 
         for f in s_field:
-            if f.check(s_pos[0], s_pos[1]):
+            if f.check(self.position):
                 activate_field.append(f)
             else:
                 pass
@@ -122,5 +128,48 @@ class ChargedParticle(object):
             pass
 
 
+class Situation(object):
+    def __init__(self, particles: list, fields: list):
+        self.particles = particles
+        self.fields = fields
+
+    def simulate(self, total_time, dt=0.001):
+        ax = plt.axes(projection='3d')
+        for p in self.particles:
+            px = []
+            py = []
+            pz = []
+            for i in tqdm(range(int(total_time / dt))):
+                p.update(dt, self.fields)
+                try:
+                    px.append(p.position[0][0])
+                    py.append(p.position[0][1])
+                    pz.append(p.position[0][2])
+                except IndexError:
+                    px.append(p.position[0])
+                    py.append(p.position[1])
+                    pz.append(p.position[2])
+            ax.plot3D(px, py, pz)
+        plt.gca().set_aspect('equal', 'box')
+        plt.show()
+
+
 if __name__ == '__main__':
-    print(orthogonal_decomposition(np.array([1, 2, 3]), np.array([4, 2, -1])))
+    n1 = random.uniform(0, np.pi)
+    n2 = random.uniform(0, np.pi)
+    n3 = random.uniform(0, np.pi)
+    n4 = random.uniform(0, np.pi)
+    n5 = random.uniform(0, np.pi)
+
+    F1 = Field(2, 1, np.array([0, 1, 0]))
+
+
+    P1 = ChargedParticle(np.array([1, 0, 0]), 1, 1)
+    P2 = ChargedParticle(np.array([0.6, 0.8, 0]), 1, 1)
+    P3 = ChargedParticle(np.array([np.cos(n1), np.sin(n1), 0]), 1, 1)
+    P4 = ChargedParticle(np.array([np.cos(n2), np.sin(n2), 0]), 1, 1)
+    P5 = ChargedParticle(np.array([np.cos(n3), np.sin(n3), 0]), 1, 1)
+    P6 = ChargedParticle(np.array([np.cos(n4), np.sin(n4), 0]), 1, 1)
+    P7 = ChargedParticle(np.array([np.cos(n5), np.sin(n5), 0]), 1, 1)
+    S1 = Situation([P1], [F1])
+    S1.simulate(8, 0.00001)
