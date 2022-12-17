@@ -24,8 +24,9 @@ class Field:
         else:
             self.scope = lambda x, y, z: self.scope(x, y, z) or new_scope(x, y, z)
 
-    def __str__(self):
-        return f'Field {self.num}'
+    def exert(self, particle):
+        particle.f[f'Lorentz force from field@{self.num}'] = np.cross(particle.v, self.B) * particle.q \
+            if self.scope(*particle.position) else 0
 
     def __repr__(self):
         return f'Field {self.num}'
@@ -48,6 +49,7 @@ class Particle:
         self.q = q
         self.f = f
         self.color = color
+        self.activation = True
         for f in self.f:
             self.f[f] = np.array(self.f[f], dtype=np.float64)
         self.num = Particle.num
@@ -59,15 +61,24 @@ class Particle:
         self.position += self.v * interval
         self.track.append(self.position.copy())
 
-    def __str__(self):
-        return f'Particle {self.num}'
+    def g_exert(self, particle, big_g):
+        v = self.position - particle.position
+        r = np.linalg.norm(v)
+        particle.f[f'G from particle:{self.num}'] = v * big_g * self.m * particle.m / r ** 2 * np.linalg.norm(v) \
+            if r else 0
+
+    def e_exert(self, particle, k):
+        v = particle.position - self.position
+        r = np.linalg.norm(v)
+        particle.f[f'Coulomb force from particle:{self.num}'] =\
+            v * k * self.q * particle.q / r ** 2 * np.linalg.norm(v) if r else 0
 
     def __repr__(self):
         return f'Particle {self.num}'
 
 
 class Space:
-    def __init__(self, interval, fields=None, particles=None):
+    def __init__(self, interval, fields=None, particles=None, big_g=1.0, k=1.0):
         if particles is None:
             particles = []
         if fields is None:
@@ -75,25 +86,29 @@ class Space:
         self.interval = interval
         self.fields = fields
         self.particles = particles
+        self.G = big_g
+        self.k = k
 
-    def begin(self, t):
+    def start(self, t):
         ax = plt.axes(projection='3d')
         for _ in range(t):
             for p in self.particles:
-                if p.position[2] < 0:
+                if not p.activation:
                     continue
-                for k in self.fields:
-                    if k.scope(*p.position):
-                        p.f[k.num] = np.cross(p.v, k.B) * p.q
-                    else:
-                        p.f[k.num] = 0
-                p.move(self.interval)
+                # elif p.position[2] < 0:
+                #     p.activation = False
+                #     continue
+                for f in self.fields:
+                    f.exert(p)
+                for i in self.particles:
+                    if i.activation:
+                        i.g_exert(p, self.G)
+                        i.e_exert(p, self.k)
+            for p in self.particles:
+                if p.activation:
+                    p.move(self.interval)
         for p in self.particles:
             ax.plot3D(*np.array(p.track).T, c=p.color)
-        return
-
-    def __str__(self):
-        return 'Space'
 
     def __repr__(self):
         return 'Space'
@@ -101,12 +116,15 @@ class Space:
 
 def main():
     fields = [
-        Field(b=[0, 0, -1]),
+        # Field(b=[0, 0, 0]),
     ]
     particles = [
-        Particle(m=1, v=[0, 2, 10], f={'G': [0, 0, -10]}, q=10, position=[0, 0, 0], color='red'),
+        Particle(m=1, v=[0, 0, 0], f={'g': [0, 0, 0]}, q=1, position=[0, 0, -1], color='red'),
+        Particle(m=1, v=[0, 0, 0], f={'g': [0, 0, 0]}, q=-2, position=[1, 0, 0], color='green'),
+        Particle(m=1, v=[0, 0, 0], f={'g': [0, 0, 0]}, q=-1, position=[0, -1, 0], color='blue'),
+        Particle(m=1, v=[0, 0, 0], f={'g': [0, 0, 0]}, q=3, position=[1, -1, 0], color='yellow'),
     ]
-    Space(0.001, fields, particles).begin(10000)
+    Space(0.0001, fields, particles, 0, 1).start(30000)
     plt.show()
 
 
