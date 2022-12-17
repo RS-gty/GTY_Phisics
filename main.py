@@ -161,16 +161,17 @@ class Situation(object):
 
 if __name__ == '__main__':
 
-    F1 = Field(0, 1, np.array([1, 1, 1]))
-    F2 = Field(2, 10, np.array([-3, 2, 1]))
+    F1 = Field(0, 1, np.array([1, 0, 0]))
+    F2 = Field(2, 1, np.array([0, 0, 1]))
 
 
-    P1 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
+    P1 = ChargedParticle(np.array([1, 0, 0]), 1, 1)
     P2 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
     P3 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
     P4 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
     P5 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
     P6 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
     P7 = ChargedParticle(np.array([random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)]), 1, 1)
-    S1 = Situation([P1, P2, P3, P4, P5, P6, P7], [F2])
-    S1.simulate(100, 0.001)
+    S1 = Situation([P1], [F2])
+    S1.simulate(30, 0.001)
+    print('break')
