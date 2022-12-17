@@ -5,7 +5,6 @@
 # @Software: PyCharm
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation
 
 
 class Field:
@@ -25,6 +24,12 @@ class Field:
         else:
             self.scope = lambda x, y, z: self.scope(x, y, z) or new_scope(x, y, z)
 
+    def __str__(self):
+        return f'Field {self.num}'
+
+    def __repr__(self):
+        return f'Field {self.num}'
+
 
 class Particle:
     num = 0
@@ -37,6 +42,7 @@ class Particle:
         if f is None:
             f = dict()
         self.position = np.array(position, dtype=np.float64)
+        self.track = [self.position.copy()]
         self.v = np.array(v, dtype=np.float64)
         self.m = m
         self.q = q
@@ -47,46 +53,60 @@ class Particle:
         self.num = Particle.num
         Particle.num += 1
 
+    def move(self, interval):
+        for f in self.f:
+            self.v += self.f[f] / self.m * interval
+        self.position += self.v * interval
+        self.track.append(self.position.copy())
+
+    def __str__(self):
+        return f'Particle {self.num}'
+
+    def __repr__(self):
+        return f'Particle {self.num}'
+
 
 class Space:
-    def __init__(self, interval):
+    def __init__(self, interval, fields=None, particles=None):
+        if particles is None:
+            particles = []
+        if fields is None:
+            fields = []
         self.interval = interval
-        self.fields = [
-            Field(b=[0, 0, -1]),
-        ]
-        self.particles = [
-            Particle(m=1, v=[0, 10, 0], f={'G': [0, 0, -10]}, q=10, position=[0, 0, 10], color='green'),
-        ]
+        self.fields = fields
+        self.particles = particles
 
     def begin(self, t):
-        path = [[[], [], []] for _ in self.particles]
         ax = plt.axes(projection='3d')
-        particles = self.particles.copy()
-        for i in range(t):
-            for j in particles:
+        for _ in range(t):
+            for p in self.particles:
+                if p.position[2] < 0:
+                    continue
                 for k in self.fields:
-                    if k.scope(*j.position):
-                        j.f[k.num] = np.cross(j.v, k.B) * j.q
+                    if k.scope(*p.position):
+                        p.f[k.num] = np.cross(p.v, k.B) * p.q
                     else:
-                        j.f[k.num] = 0
-                if j.position[2] < 0:
-                    particles.remove(j)
-                    break
-                dv = np.array([0, 0, 0], dtype=np.float64)
-                for f in j.f:
-                    dv += j.f[f] / j.m * self.interval
-                j.v += dv
-                j.position += j.v * self.interval
-                path[j.num][0].append(j.position[0])
-                path[j.num][1].append(j.position[1])
-                path[j.num][2].append(j.position[2])
-        for n, i in enumerate(path):
-            ax.plot3D(*i, color=self.particles[n].color)
+                        p.f[k.num] = 0
+                p.move(self.interval)
+        for p in self.particles:
+            ax.plot3D(*np.array(p.track).T, c=p.color)
         return
+
+    def __str__(self):
+        return 'Space'
+
+    def __repr__(self):
+        return 'Space'
 
 
 def main():
-    Space(0.01).begin(100)
+    fields = [
+        Field(b=[0, 0, -1]),
+    ]
+    particles = [
+        Particle(m=1, v=[0, 2, 10], f={'G': [0, 0, -10]}, q=10, position=[0, 0, 0], color='red'),
+    ]
+    Space(0.001, fields, particles).begin(10000)
     plt.show()
 
 
