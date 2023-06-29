@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
 from tqdm import tqdm
 from Animate import *
 
@@ -114,6 +112,7 @@ class Particle(object):
         self.position = np.array([np.float64(0), np.float64(0), np.float64(0)])
         #  Additions
         self.related_force = []
+        self.collapse = 0
 
     def update(self, dt, force: list[Force], k=1):
         # register forces
@@ -126,12 +125,15 @@ class Particle(object):
         # combine force
         for f in activate_force:
             if f in self.related_force:
-                pass
+                f.change_source(self.position)
             else:
                 if f.type == 0:
                     self.force += f.get_force(k)
                 elif f.type == 1:
-                    self.force += f.get_force(self.position, k)
+                    if np.linalg.norm(np.subtract(self.position, f.distance_source)) >= 0.02:
+                        self.force += f.get_force(self.position, k)
+                    else:
+                        self.collapse = 1
                 elif f.type == 2:
                     self.force += f.get_force(self.V_speed, self.charge)
 
@@ -145,8 +147,6 @@ class Particle(object):
         self.position += self.V_speed * dt
 
         # related force update(ONLY FOR INVERSE_SQUARE_FORCE)
-        for f2 in self.related_force:
-            f2.change_source(self.position)
 
 
 class Simulation(object):
@@ -154,21 +154,33 @@ class Simulation(object):
         self.particles = particles
         self.forces = forces
 
-    def simulate(self, total_time, dt=0.001, show_force_source=False):
-        ax = plt.axes(projection='3d')
-        for p in self.particles:
-            px = []
-            py = []
-            pz = []
-            for i in tqdm(range(int(total_time / dt))):
-                p.update(dt, self.forces)
-                px.append(p.position[0])
-                py.append(p.position[1])
-                pz.append(p.position[2])
-            ax.plot3D(px, py, pz)
+    def simulate(self, total_time, dt=0.001, show_force_source=False, show=0):
+        for p in range(len(self.particles)):
+            lc['Px' + str(p)] = []
+            lc['Py' + str(p)] = []
+            lc['Pz' + str(p)] = []
+
+        for i in tqdm(range(int(total_time / dt))):
+            index = 0
+            for p in self.particles:
+                if p.collapse == 0:
+                    p.update(dt, self.forces)
+                    lc['Px' + str(index)].append(p.position[0])
+                    lc['Py' + str(index)].append(p.position[1])
+                    lc['Pz' + str(index)].append(p.position[2])
+                else:
+                    lc['Px' + str(index)].append(lc['Px' + str(index)][-1])
+                    lc['Py' + str(index)].append(lc['Py' + str(index)][-1])
+                    lc['Pz' + str(index)].append(lc['Pz' + str(index)][-1])
+
+
+                index += 1
+        for index in range(len(self.particles)):
+            lc['Path' + str(index)] = Path(lc['Px' + str(index)], lc['Py' + str(index)], lc['Pz' + str(index)], index)
+        P_l = list(lc['Path'+str(j)] for j in range(len(self.particles)))
+        Anim = Animation(P_l, show)
         if show_force_source:
             for f in self.forces:
                 if type(f) == InverseSquareForce:
                     ax.scatter3D(f.distance_source[0], f.distance_source[1], f.distance_source[2])
-        plt.gca().set_aspect('equal', 'box')
-        plt.show()
+        Anim.animate()

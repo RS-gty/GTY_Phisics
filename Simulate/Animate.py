@@ -12,6 +12,7 @@ index_l = []
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
+
 # functions
 
 def convert1(m: np.ndarray):
@@ -36,8 +37,6 @@ def limit(l: list[np.ndarray], n: int):
         return max(t)
     elif n == 1:
         return min(t)
-
-
 
 
 # classes
@@ -107,27 +106,18 @@ class Animation(object):
                     paths.line[0]._verts3d = (np.array(paths.px), np.array(paths.py), np.array(paths.pz))
                 elif self.show == 1:
                     paths.line[0]._verts3d = (
-                    np.array(paths.x[frame]), np.array(paths.y[frame]), np.array(paths.z[frame]))
+                        np.array(paths.x[frame]), np.array(paths.y[frame]), np.array(paths.z[frame]))
 
             return L
 
         ani = FuncAnimation(fig, update
-                            , frames=convert1(np.linspace(0, len(x) - 1, len(x)))
+                            , frames=convert1(np.linspace(0, len(self.particles[0].x) - 1, len(self.particles[0].x)))
                             , interval=0.1
                             , init_func=init
                             , blit=True
                             )
-        plt.gca().set_aspect('equal', 'box')
         plt.show()
 
 
 if __name__ == '__main__':
-    x = np.arange(0, 2 * np.pi, 0.01)
-    y = np.sin(x)
-    z = np.cos(x)
-
-    P1 = Path(x, y, z, 0)
-    P2 = Path(y, z, y, 1)
-
-    A = Animation([P1, P2], 1)
-    A.animate()
+    pass
