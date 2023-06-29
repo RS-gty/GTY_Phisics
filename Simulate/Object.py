@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from tqdm import tqdm
+from Animate import *
 
 # globals
 g = {'x': 0, 'y': 0, 'z': 0}
