@@ -1,4 +1,3 @@
-import numpy as np
 from tqdm import tqdm
 from Animate import *
 
@@ -160,6 +159,9 @@ class Simulation(object):
             lc['Py' + str(p)] = []
             lc['Pz' + str(p)] = []
 
+        for pa in self.particles:
+            pa.collapse = 0
+
         for i in tqdm(range(int(total_time / dt))):
             index = 0
             for p in self.particles:
@@ -183,4 +185,5 @@ class Simulation(object):
             for f in self.forces:
                 if type(f) == InverseSquareForce:
                     ax.scatter3D(f.distance_source[0], f.distance_source[1], f.distance_source[2])
+        ax.view_init(elev=1, azim=33)
         Anim.animate()

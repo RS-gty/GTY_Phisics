@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+
 # locals
 lc = locals()
 
@@ -11,7 +12,6 @@ lc = locals()
 index_l = []
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-
 
 # functions
 
@@ -94,6 +94,8 @@ class Animation(object):
             return L
 
         def update(frame):
+            if frame == len(self.particles[0].x) - 1:
+                plt.close(fig)
             if self.show == 1:
                 for paths_ in P_list:
                     paths_.line[0]._marker = matplotlib.lines.MarkerStyle('o')
@@ -115,9 +117,6 @@ class Animation(object):
                             , interval=0.1
                             , init_func=init
                             , blit=True
+                            , repeat=False
                             )
         plt.show()
-
-
-if __name__ == '__main__':
-    pass

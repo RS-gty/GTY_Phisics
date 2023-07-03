@@ -1,7 +1,7 @@
 from Object import *
 
 
-def main():
+def Action():
     F = InverseSquareForce(10, [0, 0, -1])
     F2 = InverseSquareForce(10, [1, 0, 0])
 
@@ -15,8 +15,9 @@ def main():
     P2.related_force = [F]
 
     S = Simulation([P2, P], [F, F2])
+
     S.simulate(2, show_force_source=False, show=1)
 
 
 if __name__ == '__main__':
-    main()
+    Action()
